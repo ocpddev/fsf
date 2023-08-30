@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
             tracing_subscriber::EnvFilter::try_from_env("FSF_LOG")
                 .unwrap_or_else(|_| "info,fsf=debug,tower_http=debug".into()),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer().json().flatten_event(true))
         .init();
 
     let cli = Cli::parse();
