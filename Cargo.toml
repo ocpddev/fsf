@@ -10,7 +10,7 @@ anyhow = "1.0.75"
 clap = { version = "4.4.6", features = ["derive"] }
 http = "0.2.9"
 hyper = { version = "0.14.27", features = ["full"] }
-tokio = { version = "1.32.0", features = ["full"] }
+tokio = { version = "1.33.0", features = ["full"] }
 tower = { version = "0.4.13", features = ["make"] }
 tower-http = { version = "0.4.4", features = ["full"] }
 tower-layer = "0.3.2"
