@@ -301,7 +301,7 @@ version = "0.3.0-SNAPSHOT"
 dependencies = [
  "anyhow",
  "clap",
- "http 0.2.11",
+ "http 1.0.0",
  "hyper",
  "tokio",
  "tower",
