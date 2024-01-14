@@ -2,18 +2,14 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
+use axum::Router;
 use clap::Parser;
-use tower::make::Shared;
+use tokio::net::TcpListener;
 use tower::ServiceBuilder;
-use tower_http::compression::CompressionLayer;
 use tower_http::services::{ServeDir, ServeFile};
-use tower_http::trace::TraceLayer;
+use tower_http::ServiceBuilderExt;
 use tracing::debug;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use crate::context_path::StripPrefixLayer;
-
-mod context_path;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 #[derive(Debug, Parser)]
 #[command(name = "fsf", author, version, about, long_about = None)]
@@ -45,7 +41,7 @@ fn validate_prefix(prefix: &str) -> Result<String> {
 async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_env("FSF_LOG")
+            EnvFilter::try_from_env("FSF_LOG")
                 .unwrap_or_else(|_| "info,fsf=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer().json().flatten_event(true))
@@ -54,15 +50,24 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let serve_dir = ServeDir::new(&cli.path).fallback(ServeFile::new(cli.path.join(&cli.index)));
-    let service = ServiceBuilder::new()
-        .layer(TraceLayer::new_for_http())
-        .layer(CompressionLayer::new())
-        .option_layer(cli.prefix.as_deref().map(StripPrefixLayer::new))
-        .service(serve_dir);
+
+    let app = Router::new();
+
+    let app = if let Some(prefix) = cli.prefix {
+        app.nest_service(&prefix, serve_dir)
+    } else {
+        app.fallback_service(serve_dir)
+    };
+
+    let app = app.layer(
+        ServiceBuilder::new()
+            .compression()
+            .decompression()
+            .trace_for_http(),
+    );
 
     debug!("Listening on {}", &cli.bind);
-    hyper::Server::bind(&cli.bind)
-        .serve(Shared::new(service))
-        .await?;
+    let listener = TcpListener::bind(&cli.bind).await?;
+    axum::serve(listener, app).await?;
     Ok(())
 }
