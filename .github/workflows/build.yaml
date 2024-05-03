@@ -17,9 +17,17 @@ jobs:
   build:
     if: github.repository_owner == 'ocpddev'
     runs-on: ubuntu-latest
+    container: redhat/ubi8
     steps:
       - uses: actions/checkout@v4
-
+      - name: Install toolchain dependencies
+        # copied from https://github.com/rust-lang/rust-analyzer/blob/47a901b9bf1f99b1ec5222d478684fc412d526a5/.github/workflows/release.yaml#L66-L72
+        if: matrix.container == 'redhat/ubi8'
+        shell: bash
+        run: |
+          dnf install -y llvm-toolset openssl-devel
+          curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused -fsSL "https://sh.rustup.rs" | sh -s -- --profile minimal -y
+          echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> $GITHUB_PATH
       - uses: actions/cache@v4
         with:
           path: |
