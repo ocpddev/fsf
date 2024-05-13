@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rustfmt
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+  test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-latest
+            container: redhat/ubi8
+          - os: windows-latest
+          - os: macos-latest
+          - os: macos-14
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain dependencies
+        if: matrix.container == 'redhat/ubi8'
+        # copied from https://github.com/rust-lang/rust-analyzer/blob/47a901b9bf1f99b1ec5222d478684fc412d526a5/.github/workflows/release.yaml#L66-L72
+        shell: bash
+        run: |
+          dnf install -y llvm-toolset
+          curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused -fsSL "https://sh.rustup.rs" | sh -s -- --profile minimal -y
+          echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> $GITHUB_PATH
+
+      - name: Test
+        # currently we don't have any tests, so we just build the project to make sure it compiles
+        run: cargo build
