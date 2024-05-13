@@ -30,7 +30,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Install prerequisites
+        if: matrix.container == 'redhat/ubi8'
+        shell: bash
+        run: dnf install -y git
       - name: Install toolchain dependencies
         if: matrix.container == 'redhat/ubi8'
         # copied from https://github.com/rust-lang/rust-analyzer/blob/47a901b9bf1f99b1ec5222d478684fc412d526a5/.github/workflows/release.yaml#L66-L72
@@ -39,6 +42,8 @@ jobs:
           dnf install -y llvm-toolset
           curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused -fsSL "https://sh.rustup.rs" | sh -s -- --profile minimal -y
           echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> $GITHUB_PATH
+
+      - uses: actions/checkout@v4
 
       - name: Test
         # currently we don't have any tests, so we just build the project to make sure it compiles

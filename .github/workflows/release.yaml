@@ -18,7 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     container: redhat/ubi8
     steps:
-      - name: Install Prerequisites
+      - name: Install prerequisites
+        shell: bash
+        run: dnf install -y git
+
+      - name: Install GitHub CLI
+        shell: bash
+        run: |
+          dnf install -y 'dnf-command(config-manager)'
+          dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+          dnf install -y gh
+
+      - name: Install toolchain dependencies
         shell: bash
         # copied from https://github.com/rust-lang/rust-analyzer/blob/47a901b9bf1f99b1ec5222d478684fc412d526a5/.github/workflows/release.yaml#L66-L72
         run: |
