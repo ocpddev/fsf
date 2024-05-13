@@ -41,6 +41,11 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: Set ownership after checkout
+        shell: bash
+        # See https://github.com/actions/runner/issues/2033
+        run: chown -R $(id -u):$(id -g) $PWD
+
       - name: Build
         run: cargo build --release
 
